@@ -1,0 +1,12 @@
+from bencode3 import bdecode
+
+print('starting:')
+
+with open('test.torrent', 'rb') as torrent_file:
+    for i, line in enumerate(torrent_file):
+        print(i)
+        print(line)
+        try:
+            s = bdecode(line)
+        except UnicodeDecodeError:
+            print(s)

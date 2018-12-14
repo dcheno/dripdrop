@@ -1,0 +1,52 @@
+import os
+from hashlib import sha1
+
+from bencode3 import bdecode, bencode
+
+from tracker import Tracker, TrackerEvent
+from peer import Peer
+
+"""Represent a client to connect to the bittorrent swarm"""
+
+LISTENING_PORT = 6881
+
+class Client:
+    """Represents a client connected to a single tracker for
+    a single bittorrent file
+    """
+    def __init__(self, tor_filename):
+        self._peer_id = b'-DD-0001-12345678901'
+        # self._peer_id = '-DD-0001-os.urandom(12)
+        self._tor_filename = tor_filename
+        self._handle_tor_file(tor_filename)
+        self._peers = []
+
+    def connect_tracker(self):
+        """Establish initial contact with the HTTP Tracker"""
+        event = TrackerEvent.STARTED
+        self._tracker = Tracker(self.tor_announce, self.tor_info_hash)
+        response = self._tracker.request(event, self._peer_id, LISTENING_PORT)
+        self._handle_tracker_contact(response)
+        
+    def _handle_tor_file(self, tor_filename):
+        with open(tor_filename, 'rb') as tor_file:
+            metainfo = tor_file.read()
+
+        metadict = bdecode(metainfo)
+        self.tor_info = metadict['info']
+        self.tor_info_hash = self._hash_info(self.tor_info)
+        self.tor_announce = metadict['announce']
+
+    def _handle_tracker_contact(self, response):
+        print('HTC:', response)
+
+    def _connect_peer(self, ip, port):
+        peer = Peer(ip, port)
+        peer.shake_hands(self._peer_id, self.tor_info_hash)
+        self._peers.append(peer)
+
+    def _hash_info(self, info):
+        info_bencode = bencode(info)
+        info_bencode = bencode(info)
+        info_hash = sha1(info_bencode).digest()
+        return info_hash

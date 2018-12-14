@@ -1,0 +1,22 @@
+import unittest
+import pickle
+from hashlib import sha1
+
+
+from tracker import Tracker, TrackerEvent
+from client import Client
+from peer import Peer
+
+class TrackerTests(unittest.TestCase):
+    def test_it(self):
+        c = Client('washwash.torrent')
+        c.connect_tracker()
+        c._connect_peer('127.0.0.1', 52654)
+        c._peers[0].shake_hands(c._peer_id, c.tor_info_hash)
+        
+
+    
+if __name__ == '__main__':
+    unittest.main()
+    
+        

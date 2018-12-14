@@ -1,0 +1,59 @@
+from enum import Enum
+import socket
+
+from bencode3 import bencode
+
+"""Represent a bittorrent peer to exchange pieces with."""
+
+class Peer:
+    def __init__(self, ip, port):
+        self.ip = ip
+        self.port = port
+        self.choked = False
+        self.is_choking = False
+        self._connection = self._connect(ip, port)
+        
+    def shake_hands(self, client_peer_id, info_hash):
+        """We must first shake hands.
+
+        Message format:
+            <pstrlen><pstr><reserved><info_hash><peer_id>
+        """
+        PSTR = b"BitTorrent protocol"
+        RESERVED = b"00000000"
+
+        pstrlen = bytes([len(PSTR)])
+        message = b"".join([pstrlen, PSTR, RESERVED, info_hash, client_peer_id])
+        #message = pstrlen + bytes(PSTR) + RESERVED + info_hash + client_peer_id
+        print(message)
+        print(len(message))
+
+        print(len(pstrlen))
+        print(len(PSTR))
+        print(len(RESERVED))
+        print(len(info_hash))
+        print(len(client_peer_id))
+        
+        self._connection.sendall(message)
+        response = self._connection.recv(1024)
+        self._handle_contact(response)
+        
+    def _connect(self, ip, port):
+        """Return a socket connected to the given ip address and port number
+        
+        Args:
+            ip: the ip address as a string. ie '127.0.0.1'
+            port: the port number as an integer.
+
+        Returns:
+            a connected socket object.
+        """
+        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        conn.connect((ip, port))
+        return conn
+        
+    
+    def _handle_contact(self, response):
+        print('Response:', response)
+
+    

@@ -2,10 +2,37 @@ import unittest
 import pickle
 
 from tracker import Tracker, TrackerEvent
-from client import Client
+from client import Client, ClientError
 from message import MessageParser, MessageType, _strip_message
 from peer import Peer
-from torrent import Torrent
+from torrent import Torrent, TorrentError
+
+class ClientTests(unittest.TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_add_torrent(self):
+        self.client.add_torrent('test.torrent')
+        self.assertTrue(isinstance(self.client._torrent, Torrent), "Client did not initialize Torrent")
+        with self.assertRaises(ClientError):
+            self.client.add_torrent('portrait.torrent')
+
+    def test_non_existent_torrent(self):
+        with self.assertRaises(TorrentError):
+            self.client.add_torrent('not_a_real.torrent')
+
+    def test_start_torrent(self):
+        with self.assertRaises(ClientError):
+            self.client.start_torrent()
+
+        self.client.add_torrent('test.torrent')
+        self.client.start_torrent()
+
+        self.assertTrue(isinstance(self.client._tracker, Tracker), "Client did not initialize Tracker")
+
+
+
+
 
 class TrackerTests(unittest.TestCase):
     def setUp(self):
@@ -109,7 +136,13 @@ class PeerTests(unittest.TestCase):
         self.peer.torrent.num_pieces = 2
 
 if __name__ == '__main__':
-    unittest.main()
+    # unittest.main()
+    t = Client()
+    t.add_torrent('portrait.torrent')
+    #t.start_torrent()
+    p = Peer('ABC', '127.0.0.1', 9876, t._torrent)
+    t._connect_peer(p)
+    print("Warning Not Doing All Tests")
     
         
 """

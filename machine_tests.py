@@ -13,17 +13,17 @@ class TrackerTests(unittest.TestCase):
         c.add_torrent('portrait.torrent')
         c.start_torrent()
 
-        input(":")
-        # id = '-qB3370-S3JQ-V0CGp45'
-        id = '-DE13D0-2FGasdxJ7AE5'#input('id:')
-        # port = 8999
-        port = 8201 # int(input('port:'))
-        ip = '127.0.0.1' # input('ip:')
-
-        p = Peer(id, ip, port, c._torrent)
-        c._connect_peer(p)
-
-        # c._peers[0].start_listening()
+        # input(":")
+        # # id = '-qB3370-S3JQ-V0CGp45'
+        # id = '-DE13D0-2FGasdxJ7AE5'#input('id:')
+        # # port = 8999
+        # port = 8201 # int(input('port:'))
+        # ip = '127.0.0.1' # input('ip:')
+        #
+        # p = Peer(id, ip, port, c._torrent)
+        # c._connect_peer(p)
+        #
+        # # c._peers[0].start_listening()
         
 
     

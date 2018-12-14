@@ -4,8 +4,11 @@ from hashlib import sha1
 from bencode3 import bdecode, bencode
 
 """Handle data related to a torrent and its torrent file"""
-class TorrentException(Exception):
+
+
+class TorrentError(Exception):
     pass
+
 
 class Torrent:
     """Hold information coming from a torrent file."""
@@ -16,8 +19,11 @@ class Torrent:
         self._handle_file(self.path)
 
     def _handle_file(self, tor_file_path):
-        with open(tor_file_path, 'rb') as tor_file:
-            metainfo = tor_file.read()
+        try:
+            with open(tor_file_path, 'rb') as tor_file:
+                metainfo = tor_file.read()
+        except FileNotFoundError:
+            raise TorrentError("No Torrent File With That Name.")
 
         metadict = bdecode(metainfo)
         self.info = metadict['info']
@@ -25,9 +31,14 @@ class Torrent:
         self.announce = metadict['announce']
         self.length = self.info['length']
         self.piece_length = self.info['piece length']
+        self.target_file_name = self.info['name']
         # The pieces entry consists of 20 byte hash values for each pieces.
-        # TODO: Store hash values of pieces so that we can check against them.
         self.num_pieces = len(self.info['pieces'])//20
+        self.piece_hashes = []
+        hashes = self.info['pieces']
+        while hashes:
+            self.piece_hashes.append(hashes[:20])
+            hashes = hashes[20:]
 
     @staticmethod
     def _hash_info(info):

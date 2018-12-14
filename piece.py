@@ -66,6 +66,9 @@ class Piece:
 
         return Message(MessageType.REQUEST, request_payload)
 
+    def writeout(self, file):
+        file.write(self._downloaded_bytes)
+
     def check_hash(self):
         # TODO: This should check the validity of the sent data by
         #       comparing the hash of the piece to the provided hash
@@ -74,6 +77,9 @@ class Piece:
 
     def __repr__(self):
         return 'Piece With Index {}'.format(self.index)
+
+    def __lt__(self, other):
+        return self.index < other.index
 
 
 

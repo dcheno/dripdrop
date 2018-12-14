@@ -11,7 +11,10 @@ from message import Message, MessageParser, MessageType, get_handshake, parse_ha
 """Represent a BitTorrent peer to exchange pieces with."""
 
 
-class PeerException(Exception):
+class PeerError(Exception):
+    pass
+
+class PeerConnectionError(PeerError):
     pass
 
 
@@ -58,7 +61,7 @@ class Peer:
         self.shake_hands(client_id)
         # Create a new thread and start a Peer TCP Connection of it.
         if self._connection_thread:
-            raise PeerException("This Peer is already connected.")
+            raise PeerError("This Peer is already connected.")
 
         reactor.connectTCP(self.ip, self.port, PeerConnectionFactory(self))
         self._connection_thread = Thread(target=reactor.run, kwargs={'installSignalHandlers': 0})
@@ -93,7 +96,7 @@ class Peer:
                 raise HandshakeException('Bad Peer Id')
 
             self.hands_shook = True
-            self.messages_from_peer.put(Message(MessageType.HANDSHAKE, data))
+            self.messages_from_peer.put(Message.factory(MessageType.HANDSHAKE, data))
 
             if 'extra' in handshake:
                 self.handle_messages(handshake['extra'])
@@ -110,7 +113,7 @@ class Peer:
         """Assigns a callback for all messages that are intended for the peer"""
         print('Subscribing for Peer')
         if self._peer_listener_thread:
-            raise PeerException("This peer already has a connection listening to it.")
+            raise PeerError("This peer already has a connection listening to it.")
         thread = Thread(target=message_queue_worker, args=(self.messages_to_peer, callback))
         self._peer_listener_thread = thread
         print('Starting Thread')
@@ -120,7 +123,7 @@ class Peer:
         """Assigns a callback for all messages that are intended for the client"""
         print('Subscribing for Client')
         if self._client_listener_thread:
-            raise PeerException("This peer already has a client listening to it.")
+            raise PeerError("This peer already has a client listening to it.")
         thread = Thread(target=message_queue_worker, args=(self.messages_from_peer, callback))
         self._client_listener_thread = thread
         thread.start()
@@ -170,7 +173,7 @@ class Peer:
 
         # Double check the length of the payload vs the expected length of the file.
         if len(payload) != ceil(self.torrent.num_pieces/8):
-            raise PeerException('Peer Bitfield Does not Match Expected Length')
+            raise PeerError('Peer Bitfield Does not Match Expected Length')
             # TODO: Handle this exception in caller and drop the connection.
 
         piece_number = 0
@@ -238,3 +241,4 @@ class PeerConnectionFactory(ClientFactory):
 
     def clientConnectionFailed(self, connector, reason):
         print('Failed connection:', reason)
+        raise PeerConnectionError(reason)

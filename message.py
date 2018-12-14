@@ -58,16 +58,16 @@ class MessageParser:
     def _parse_message(self, bytestring):
         """Returns an appropriate Message object"""
         if not bytestring:
-            return Message(MessageType.KEEP_ALIVE)
+            return Message.factory(MessageType.KEEP_ALIVE)
         else:
             id_byte, payload = _strip_message(bytestring, 1)
             id = ord(id_byte) # FIXME: Not sure I love this use of ord here.
             message_type = MessageType(id)
 
             if payload:
-                return Message(message_type, payload)
+                return Message.factory(message_type, payload)
             else:
-                return Message(message_type)
+                return Message.factory(message_type)
 
 
 class MessageType(Enum):
@@ -84,6 +84,13 @@ class MessageType(Enum):
 
 
 class Message:
+    @staticmethod
+    def factory(message_type, raw_payload=None):
+        if message_type == MessageType.PIECE:
+            return PieceMessage(raw_payload)
+        else:
+            return Message(message_type, raw_payload)
+
     def __init__(self, message_type, payload=None):
         self.type = message_type
         self.payload = payload
@@ -112,6 +119,18 @@ class Message:
 
     def __repr__(self):
         return 'Message [ type: {} | payload: {} ]'.format(self.type.name, self.payload or 'No Payload')
+
+class PieceMessage(Message):
+    def __init__(self, raw_payload):
+        self.type = MessageType.PIECE
+        index_bytes = raw_payload[:4]
+        self.index = int.from_bytes(index_bytes, byteorder='big')
+        offset_bytes = raw_payload[4:8]
+        self.offset = int.from_bytes(offset_bytes, byteorder='big')
+        self.payload = raw_payload[8:]
+
+    def __repr__(self):
+        return 'Message [ type: {} | index: {} ]'.format(self.type.name, self.index)
 
 def _strip_message(message, index):
     """Splits an array at the given index"""
@@ -142,7 +161,7 @@ def get_handshake(client_id, info_hash):
 
     pstrlen = bytes([len(constants.PSTR)])
     payload = b"".join([pstrlen, constants.PSTR, constants.RESERVED, info_hash, client_id.encode()])
-    message = Message(MessageType.HANDSHAKE, payload)
+    message = Message.factory(MessageType.HANDSHAKE, payload)
     return message
 
 

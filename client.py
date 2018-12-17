@@ -33,7 +33,7 @@ class Client:
             raise ClientError('Client already has a Torrent')
         else:
             self._torrent = Torrent(tor_file_path)
-            self.unrequested_pieces = piece_factory(self._torrent.length, self._torrent.piece_length)
+            self.unrequested_pieces = piece_factory(self._torrent.length, self._torrent.piece_length, self._torrent.piece_hashes)
 
     def start_torrent(self):
         """Begin the torrent process by contacting the Tracker and
@@ -137,8 +137,11 @@ class Client:
         return piece.completed
 
     def _complete(self):
-        self.pieces.sort()
 
+        for peer in self._peers:
+            peer.close_connection()
+
+        self.pieces.sort()
         with open(self._torrent.target_file_name, 'wb') as target_file:
             for piece in self.pieces:
                 piece.writeout(target_file)

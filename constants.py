@@ -12,3 +12,7 @@ PEER_ID_LEN = 20
 
 # Request Configuration
 REQUEST_LENGTH = 2 ** 14
+
+# Tracker Configuration
+PEER_BYTE_LENGTH = 6
+PEER_IP_LENGTH = 4

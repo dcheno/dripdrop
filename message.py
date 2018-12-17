@@ -1,13 +1,10 @@
+from queue import Queue
 from enum import Enum
 from struct import unpack, pack
 import constants
 
 """Handle BitTorrent Protocol message parsing duties"""
 
-# TODO: HANDSHAKE SHOULD BE A SUBCLASS OF MESSAGE, WHICH SHOULD CLEAN UP THE TOBYTES METHOD.
-# TODO: CREATE A SUBCLASS OF QUEUE CALLED MESSAGE QUEUE, WHICH HAS AN ITER METHOD DEFINED
-#       WHICH WILL HANDLE THE LOOPING THROUGH (THEN SWITCH MESSAGE WORKERS TO SIMPLE ITERATE
-#       OVER A MESSAGE QUEUE.
 
 class MessageException(Exception):
     pass
@@ -55,14 +52,15 @@ class MessageParser:
                 message_bytes, bytestring = _strip_message(bytestring, length)
                 yield self._parse_message(message_bytes)
 
-    def _parse_message(self, bytestring):
+    @staticmethod
+    def _parse_message(bytestring):
         """Returns an appropriate Message object"""
         if not bytestring:
             return Message.factory(MessageType.KEEP_ALIVE)
         else:
             id_byte, payload = _strip_message(bytestring, 1)
-            id = ord(id_byte) # FIXME: Not sure I love this use of ord here.
-            message_type = MessageType(id)
+            type_id = int.from_bytes(id_byte, byteorder='big')
+            message_type = MessageType(type_id)
 
             if payload:
                 return Message.factory(message_type, payload)
@@ -71,6 +69,7 @@ class MessageParser:
 
 
 class MessageType(Enum):
+    CLOSE = -3
     HANDSHAKE = -2
     KEEP_ALIVE = -1
     CHOKE = 0
@@ -88,6 +87,8 @@ class Message:
     def factory(message_type, raw_payload=None):
         if message_type == MessageType.PIECE:
             return PieceMessage(raw_payload)
+        elif message_type == MessageType.HANDSHAKE:
+            return HandShakeMessage(raw_payload)
         else:
             return Message(message_type, raw_payload)
 
@@ -97,21 +98,15 @@ class Message:
 
     def to_bytes(self):
         # form the length prefix.
-
-        if self.type == MessageType.HANDSHAKE:
-            return self.payload
-
         if self.payload:
             length = len(self.payload) + 1
         else:
             length = 1
 
         length_bytes = pack('!I', length)
-
-        # form the id byte
         id_byte = int.to_bytes(self.type.value, length=1, byteorder='big')
-        # put length, id, and payload together.
         bytestring = length_bytes + id_byte
+
         if self.payload:
             bytestring += self.payload
 
@@ -120,17 +115,26 @@ class Message:
     def __repr__(self):
         return 'Message [ type: {} | payload: {} ]'.format(self.type.name, self.payload or 'No Payload')
 
+
+class HandShakeMessage(Message):
+    def __init__(self, payload):
+        super().__init__(MessageType.HANDSHAKE, payload)
+
+    def to_bytes(self):
+            return self.payload
+
+
 class PieceMessage(Message):
     def __init__(self, raw_payload):
-        self.type = MessageType.PIECE
         index_bytes = raw_payload[:4]
         self.index = int.from_bytes(index_bytes, byteorder='big')
         offset_bytes = raw_payload[4:8]
         self.offset = int.from_bytes(offset_bytes, byteorder='big')
-        self.payload = raw_payload[8:]
+        super().__init__(MessageType.PIECE, raw_payload[8:])
 
     def __repr__(self):
         return 'Message [ type: {} | index: {} ]'.format(self.type.name, self.index)
+
 
 def _strip_message(message, index):
     """Splits an array at the given index"""
@@ -182,19 +186,29 @@ def parse_handshake(data):
 
     return handshake
 
-def message_queue_worker(queue, callback):
+
+class MessageQueue(Queue):
+    STOP = object()
+
+    def close(self):
+        self.put(self.STOP)
+
+    def __iter__(self):
+        while True:
+            message = self.get()
+            try:
+                if message is self.STOP:
+                    return
+                yield message
+            finally:
+                self.task_done()
+
+
+def message_queue_worker(message_queue, callback):
     """This little guy will keep trying to pull from
     the queue until it's told not to.
 
     Will call the the callback function then alert the
     queue that work is done"""
-    print('Beginning Loop')
-    while True:
-        print("getting message")
-        message = queue.get()
-        # print('message:', message)
-        if not message:
-            print('Breaking')
-            break
+    for message in message_queue:
         callback(message)
-        queue.task_done()

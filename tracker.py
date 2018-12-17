@@ -1,10 +1,10 @@
-import hashlib
-import os
 from enum import Enum
 from struct import unpack
 
 import requests
 from bencode3 import bdecode, bencode
+
+import constants
 
 class TrackerEvent(Enum):
     STARTED = 'started'
@@ -36,16 +36,9 @@ class Tracker:
         else:
             left = 0
         params = self._prepare_params(event, peer_id, port, left)
-        print('Params:', params)
-        print('Announce:', self.announce)
         r = requests.get(self.announce, params=params)
 
-        # Remove when this is working
-        # import pickle
-        # pickle.dump(r.content, open('response.p', 'ab'))
-        # End Remove
-
-        handled_response = self._handle_response(event, r.content)
+        handled_response = self._handle_response(r.content)
         return handled_response
     
     def _prepare_params(self, event, peer_id, port, left):
@@ -65,13 +58,14 @@ class Tracker:
 
         return params
 
-    def _handle_response(self, event, response):
+    def _handle_response(self, response):
         """Parse the tracker response and return decoded dictionary
         and make necessary state changes to tracker"""
-        
+        # TODO: Implement Updating the Tracker on our status.
+
         # Decode the response
         response_dict = bdecode(response)
-        print(response_dict)
+
         # Check if tracker_id should be updated.
         if response_dict.get('tracker id'):
             self.tracker_id = response_dict['tracker id']
@@ -85,28 +79,24 @@ class Tracker:
             self.peers = peers
         else:
             response_dict['peers'] = self._parse_binary_peers(peers)
-        print(response_dict)
         return response_dict
-            
-    def _parse_binary_peers(self, peers):
+
+    @staticmethod
+    def _parse_binary_peers(peers):
         """Handle compact binary peer data. Return as a list
         of dictionaries."""
-
-        PEER_BYTE_LENGTH = 6
-        PEER_IP_LENGTH = 4
-        
         peer_list = []
         
-        if len(peers) % PEER_BYTE_LENGTH:
+        if len(peers) % constants.PEER_BYTE_LENGTH:
             raise ValueError('Bad Peer Length')
 
-        num_peers = len(peers)//PEER_BYTE_LENGTH
+        num_peers = len(peers)//constants.PEER_BYTE_LENGTH
 
         for i in range(num_peers):
-            start_index = i * PEER_BYTE_LENGTH
-            end_index = start_index + PEER_BYTE_LENGTH
+            start_index = i * constants.PEER_BYTE_LENGTH
+            end_index = start_index + constants.PEER_BYTE_LENGTH
             peer_bytes = peers[start_index:end_index]
-            ip_bytes = peer_bytes[:PEER_IP_LENGTH]
+            ip_bytes = peer_bytes[:constants.PEER_IP_LENGTH]
 
             addr_parts = []
             for byte in ip_bytes:
@@ -114,7 +104,7 @@ class Tracker:
 
             ip = '.'.join([str(b) for b in addr_parts])
 
-            port_bytes = peer_bytes[PEER_IP_LENGTH:]
+            port_bytes = peer_bytes[constants.PEER_IP_LENGTH:]
             port = unpack('!H', port_bytes)[0]
     
             peer_list.append({'ip': ip, 'port': port})

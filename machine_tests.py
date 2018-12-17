@@ -10,7 +10,7 @@ from peer import Peer
 class TrackerTests(unittest.TestCase):
     def test_it(self):
         c = Client()
-        c.add_torrent('portrait.torrent')
+        c.add_torrent('wishtorrent.torrent')
         c.start_torrent()
 
         # input(":")

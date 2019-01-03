@@ -6,6 +6,7 @@ from bencode3 import bdecode, bencode
 
 import constants
 
+
 class TrackerEvent(Enum):
     STARTED = 'started'
     STOPPED = 'stopped'

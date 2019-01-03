@@ -65,16 +65,12 @@ class Peer:
             raise PeerError("This Peer is already connected.")
 
         reactor.connectTCP(self.ip, self.port, PeerConnectionFactory(self))
-        if not reactor.running:
-            # FIXME: Clearly, assigning this thread in one peer but not in others is not ideal.
-            #        perhaps this is moved into the peer factory or something. Keep track as a class var?
-            self._connection_thread = Thread(target=reactor.run, kwargs={'installSignalHandlers': 0})
-            self._connection_thread.start()
-        # TODO: Handle disconnection.
+        PeerConnectionFactory.ensure_reactor()
+        # # TODO: Handle disconnection.
 
     def close_connection(self):
-        # TODO: Actually figure out how to close connection, instead of just stopping
-        #       sending messages
+        """Tells the protocol to close the connection, then notifies the queues
+        that their work is over."""
         self.messages_to_peer.put(Message(MessageType.CLOSE))
         self.messages_to_peer.close()
         self.messages_from_peer.close()
@@ -93,7 +89,7 @@ class Peer:
 
     def handle_messages(self, data):
         """Interprets incoming messages and responds or notifies the client
-        as necessary"""
+        nas necessary"""
         if is_handshake(data):
             handshake = parse_handshake(data)
 
@@ -225,7 +221,11 @@ class PeerConnection(Protocol):
         else:
             self.transport.write(message.to_bytes())
 
+
 class PeerConnectionFactory(ClientFactory):
+    """Creates a twisted TCP connection to a peer."""
+    connection_thread = None
+
     def __init__(self, peer):
         self.peer = peer
 
@@ -242,3 +242,10 @@ class PeerConnectionFactory(ClientFactory):
     def clientConnectionFailed(self, connector, reason):
         # print('Failed connection:', reason)
         raise PeerConnectionError(reason)
+
+    @classmethod
+    def ensure_reactor(cls):
+        if not cls.connection_thread:
+            cls.connection_thread = Thread(target=reactor.run, kwargs={'installSignalHandlers': 0})
+            cls.connection_thread.start()
+

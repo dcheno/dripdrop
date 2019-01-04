@@ -11,5 +11,7 @@ python3 dripdrop.py
 
 This will open an interface which will request the name of a .torrent file. This .torrent file should be stored in root directory as well.
 
+At present, DripDrop is only known to work on Linux and to interact with Deluge and Qbittorrent clients.
+
 ## License
 DripDrop is copyright 2018 Dan Chenoweth and is available under the MIT License.

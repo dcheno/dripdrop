@@ -2,6 +2,10 @@
 
 DripDrop was written as a project to gain a deeper knowledge of Python. It is not recommended as a client for actual BitTorrent use. At present, the client only downloads files from other peers and does not upload them.
 
+## Requirements
+
+DripDrop requires the Twisted framework, which is available from pip.
+
 ## Running DripDrop
 To run DripDrop download the files and use the command line to run dripdrop.py from the root directory:
 

@@ -4,7 +4,22 @@ DripDrop was written as a project to gain a deeper knowledge of Python. It is no
 
 ## Requirements
 
-DripDrop requires the Twisted framework, which is available from pip.
+DripDrop requires the following Python packages:
+
+[Twisted](https://twistedmatrix.com/trac/)
+```bash
+pip3 install twisted
+```
+
+[Requests](http://docs.python-requests.org/en/master/)
+```bash
+pip3 install requests
+```
+
+[Bencode3](https://pypi.org/project/bencode3/)
+```bash
+pip3 install bencode3
+```
 
 ## Running DripDrop
 To run DripDrop download the files and use the command line to run dripdrop.py from the root directory:

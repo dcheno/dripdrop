@@ -25,6 +25,8 @@ print(" __              __")
 print("|  \\  __    __  |  \\  __  __   __")
 print("|__/ |   | |__| |__/ |   |__| |__|")
 print("           |                  |")
+print("")
+print("")
 
 def get_and_assign_file():
     file_name = input(".torrent file: ")

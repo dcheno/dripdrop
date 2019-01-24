@@ -2,6 +2,8 @@
 
 DripDrop was written as a project to gain a deeper knowledge of Python. It is not recommended as a client for actual BitTorrent use. At present, the client only downloads files from other peers and does not upload them.
 
+![DripDrop Screenshot](https://github.com/dcheno/dripdrop/blob/master/dripdrop_sc.png)
+
 ## Requirements
 
 DripDrop requires the following Python packages:
